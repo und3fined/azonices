@@ -1,0 +1,12 @@
+// Folder-specific settings
+//
+// For a full list of overridable settings, and general information on folder-specific settings,
+// see the documentation: https://docs.zed.dev/configuration/configuring-zed#folder-specific-settings
+{
+  "assistant": {
+    "default_open_ai_model": "gpt-3.5-turbo-0613"
+  },
+  "language_overrides": {},
+  "languages": {},
+  "projects_online_by_default": false
+}

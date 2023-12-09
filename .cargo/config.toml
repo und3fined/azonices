@@ -1,0 +1,6 @@
+# Configure
+# Reference: https://doc.rust-lang.org/cargo/reference/config.html
+# ===========
+
+[alias]
+dev = "run --bin cli"

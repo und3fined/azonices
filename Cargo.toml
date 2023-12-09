@@ -1,0 +1,25 @@
+[package]
+name = "azonices"
+version = "0.1.0"
+edition = "2021"
+authors = ["und3fy <me@und3fy.dev>"]
+rust-version = "1.74.1"
+default-run = "cli"
+
+[[bin]]
+name = "cli"
+path = "crates/cli/src/main.rs"
+
+[dependencies]
+
+
+[workspace]
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["und3fy <me@und3fy.dev>"]
+rust-version = "1.74.1"
+
+[workspace.dependencies]
