@@ -4,7 +4,7 @@
 use thiserror_impl::Error;
 
 #[derive(Debug, Error)]
-pub enum SajaError {
+pub enum EncycError {
   #[error(transparent)]
   Sanakirja(#[from] sanakirja::Error),
   #[error("Pristine locked")]
