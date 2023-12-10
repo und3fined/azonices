@@ -4,6 +4,7 @@
 use std::fs;
 
 use anyhow::Result;
+use azoni_core::pristine;
 use azoni_x::path::current_dir;
 
 const DOT_DIR: &str = ".azoni";
@@ -16,7 +17,7 @@ fn main() -> Result<()> {
     fs::create_dir(&azoni_dir).unwrap();
   }
 
-  let _encyc = azoni_core::Pristine::new(&azoni_dir.join("azoni.db"))?;
+  let _encyc = pristine::Encyc::new(&azoni_dir.join("azoni.db"))?;
 
   println!("Current directory: {}", cur.display());
 
