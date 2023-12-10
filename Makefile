@@ -70,7 +70,8 @@ crate: ## New crate with cargo. Usage: make crate type=<bin|lib> name=<crate_nam
 		exit 1; \
 	fi
 
-	@echo "Creating new crate. $(FONT_BOLD)Package$(FONT_RESET): $(FONT_CYAN)azoni-$(name)$(FONT_RESET) • $(FONT_BOLD)Type$(FONT_RESET):  $(FONT_CYAN)$(type)$(FONT_RESET)"
+	@echo "Creating new crate."
+	@echo "$(FONT_BOLD)Package$(FONT_RESET): $(FONT_CYAN)azoni-$(name)$(FONT_RESET) • $(FONT_BOLD)Type$(FONT_RESET): $(FONT_CYAN)$(type)$(FONT_RESET)"
 	$(CARGO) new --$(type) --name azoni-$(name) crates/$(name) --quiet
 	@echo "Open $(FONT_BLUE)crates/$(name)$(FONT_RESET) to start working on your new crate."
 

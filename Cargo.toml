@@ -11,7 +11,9 @@ name = "cli"
 path = "crates/cli/src/main.rs"
 
 [dependencies]
-
+azoni-core.workspace = true
+azoni-x.workspace = true
+anyhow.workspace = true
 
 [workspace]
 members = ["crates/*"]
@@ -23,3 +25,16 @@ authors = ["und3fy <me@und3fy.dev>"]
 rust-version = "1.74.1"
 
 [workspace.dependencies]
+azoni-cli = { path = "./crates/cli" }
+azoni-core = { path = "./crates/core" }
+azoni-x = { path = "./crates/x" }
+
+anyhow = "1.0.75"
+data-encoding = "2.5.0"
+env_logger = "0.10.1"
+lazy_static = "1.4.0"
+log = { version = "0.4.20", features = ["serde"] }
+rand = "0.8.5"
+serde = { version = "1.0.193", features = ["serde_derive"] }
+thiserror = "1.0.50"
+thiserror-impl = "1.0.50"

@@ -6,7 +6,13 @@
   "assistant": {
     "default_open_ai_model": "gpt-3.5-turbo-0613"
   },
-  "language_overrides": {},
+  "language_overrides": {
+    "Rust": {
+      "hard_tabs": false,
+      "tab_size": 2
+    }
+  },
   "languages": {},
-  "projects_online_by_default": false
+  "projects_online_by_default": false,
+  "preferred_line_length": 160
 }
