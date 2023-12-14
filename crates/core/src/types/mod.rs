@@ -19,3 +19,7 @@ lazy_static! {
     spec.encoding().unwrap()
   };
 }
+
+pub type Hasher = std::collections::hash_map::RandomState;
+pub type HashMap<K, V> = std::collections::HashMap<K, V, Hasher>;
+pub type HashSet<K> = std::collections::HashSet<K, Hasher>;

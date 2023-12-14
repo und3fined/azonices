@@ -7,6 +7,8 @@ rust-version.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+blake3 = "1.5.0"
+byteorder = "1.5.0"
 chrono = { version = "0.4.31", features = ["serde"] }
 data-encoding.workspace = true
 lazy_static.workspace = true
