@@ -4,7 +4,7 @@
 use log::debug;
 use sanakirja::{debug::Check, Storable, UnsizedStorable};
 
-use crate::types::SmallStr;
+use crate::types::{SmallStr, SmallString};
 
 impl UnsizedStorable for SmallStr {
   const ALIGN: usize = 1;

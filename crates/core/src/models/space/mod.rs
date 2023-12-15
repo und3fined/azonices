@@ -43,3 +43,8 @@ impl<T: LoadPage<Error = sanakirja::Error> + RootPage> SpaceTxnT for GenericTxn<
     space.name.as_str()
   }
 }
+
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
+pub struct SerializedSpace {
+  id: UId,
+}

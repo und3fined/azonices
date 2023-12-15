@@ -2,16 +2,49 @@
 // Created by und3fined <me@und3fy.dev> on 2023 Dec 14.
 #![allow(dead_code)]
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
+use parking_lot::{Mutex, RwLock};
 use sanakirja::{Env, LoadPage, RootPage};
 
 use crate::{
-  models::space::SpaceRef,
+  models::space,
+  traits::MutTxnT,
   types::{HashMap, SmallString},
 };
 
 use super::{hash::*, sanakirja::types::*, ChangeId};
+
+pub struct ArcTxn<T>(pub Arc<RwLock<T>>);
+
+impl<T> ArcTxn<T> {
+  pub fn new(t: T) -> Self {
+    ArcTxn(Arc::new(RwLock::new(t)))
+  }
+}
+
+impl<T> Clone for ArcTxn<T> {
+  fn clone(&self) -> Self {
+    ArcTxn(self.0.clone())
+  }
+}
+
+// impl<T: MutTxnT> ArcTxn<T> {
+//   pub fn commit(self) -> Result<(), T::GraphError> {
+//     if let Ok(txn) = Arc::try_unwrap(self.0) {
+//       txn.into_inner().commit()
+//     } else {
+//       panic!("Tried to commit an ArcTxn without dropping its references")
+//     }
+//   }
+// }
+
+impl<T> std::ops::Deref for ArcTxn<T> {
+  type Target = RwLock<T>;
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
 
 pub type Txn = GenericTxn<sanakirja::Txn<Arc<Env>>>;
 pub type MutTxn<T> = GenericTxn<sanakirja::MutTxn<Arc<Env>, T>>;
@@ -29,7 +62,10 @@ where
   #[doc(hidden)]
   pub external: UDb<ChangeId, SerializedHash>,
 
-  pub(crate) open_spaces: Mutex<HashMap<SmallString, SpaceRef<Self>>>,
-  counter: usize,
-  cur_space: Option<String>,
+  pub(crate) open_spaces: Mutex<HashMap<SmallString, space::SpaceRef<Self>>>,
+
+  pub(super) spaces: UDb<SmallString, space::SerializedSpace>,
+
+  pub(super) counter: usize,
+  pub(super) cur_space: Option<String>,
 }

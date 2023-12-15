@@ -3,11 +3,14 @@
 #![allow(dead_code)]
 
 use anyhow::Result;
+use parking_lot::{Mutex, RwLock};
 use std::{io::ErrorKind, path::Path, sync::Arc};
 
-use sanakirja::Env;
+use sanakirja::{btree, Env, RootDb};
 
-use super::EncycError;
+use crate::types::{HashMap, L64};
+
+use super::{ArcTxn, EncycError, MutTxn, Txn};
 
 const DB_SIZE: u64 = 1 << 13; // 8KB
 
@@ -52,5 +55,81 @@ impl Encyc {
   pub fn new_anony_with_size(size: u64) -> Result<Self, EncycError> {
     let env = Env::new_anon(size, 2)?;
     Ok(Self { env: Arc::new(env) })
+  }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+#[repr(usize)]
+pub enum Root {
+  Version,
+  Internal,
+  External,
+  Spaces,
+}
+
+const VERSION: L64 = L64(1u64.to_le());
+
+impl Encyc {
+  pub fn txn_begin(&self) -> Result<Txn, EncycError> {
+    let txn = Env::txn_begin(self.env.clone())?;
+    if L64(txn.root(Root::Version as usize)) != VERSION {
+      return Err(EncycError::Version);
+    }
+
+    fn begin(txn: sanakirja::Txn<Arc<Env>>) -> Option<Txn> {
+      Some(Txn {
+        spaces: txn.root_db(Root::Spaces as usize)?,
+        external: txn.root_db(Root::External as usize)?,
+        internal: txn.root_db(Root::Internal as usize)?,
+
+        open_spaces: Mutex::new(HashMap::default()),
+        txn,
+        counter: 0,
+        cur_space: None,
+      })
+    }
+
+    if let Some(txn) = begin(txn) {
+      Ok(txn)
+    } else {
+      Err(EncycError::PristineCorrupted)
+    }
+  }
+
+  pub fn arc_txn_begin(&self) -> Result<ArcTxn<MutTxn<()>>, EncycError> {
+    Ok(ArcTxn(Arc::new(RwLock::new(self.mut_txn_begin()?))))
+  }
+
+  pub fn mut_txn_begin(&self) -> Result<MutTxn<()>, EncycError> {
+    let mut txn = Env::mut_txn_begin(self.env.clone())?;
+    if let Some(version) = txn.root(Root::Version as usize) {
+      if L64(version) != VERSION {
+        return Err(EncycError::Version.into());
+      }
+    } else {
+      txn.set_root(Root::Version as usize, VERSION.0);
+    }
+
+    Ok(MutTxn {
+      spaces: if let Some(db) = txn.root_db(Root::Spaces as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
+      external: if let Some(db) = txn.root_db(Root::External as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
+      internal: if let Some(db) = txn.root_db(Root::Internal as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
+      open_spaces: Mutex::new(HashMap::default()),
+      txn,
+      counter: 0,
+      cur_space: None,
+    })
   }
 }
