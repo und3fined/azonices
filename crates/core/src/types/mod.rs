@@ -23,3 +23,9 @@ lazy_static! {
 pub type Hasher = std::collections::hash_map::RandomState;
 pub type HashMap<K, V> = std::collections::HashMap<K, V, Hasher>;
 pub type HashSet<K> = std::collections::HashSet<K, Hasher>;
+
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
+pub struct Pair<A, B> {
+  pub a: A,
+  pub b: B,
+}

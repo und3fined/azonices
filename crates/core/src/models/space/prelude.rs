@@ -8,4 +8,6 @@ pub trait SpaceTxnT {
 
   fn id<'a>(&self, space: &'a Self::Space) -> Option<&'a UId>;
   fn name<'a>(&self, space: &'a Self::Space) -> &'a str;
+
+  type Changeset;
 }

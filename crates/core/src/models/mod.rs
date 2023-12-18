@@ -4,6 +4,7 @@
 mod base;
 pub use base::*;
 
+pub mod graph;
 pub mod space;
 
 mod transaction;

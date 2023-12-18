@@ -2,15 +2,17 @@
 // Created by und3fined <me@und3fy.dev> on 2023 Dec 14.
 #![allow(dead_code)]
 
-use std::sync::Arc;
+use std::{collections::hash_map::Entry, sync::Arc};
 
+use log::debug;
 use parking_lot::{Mutex, RwLock};
-use sanakirja::{Env, LoadPage, RootPage};
+use sanakirja::{btree, Env, LoadPage, RootPage};
 
 use crate::{
   models::space,
-  traits::MutTxnT,
-  types::{HashMap, SmallString},
+  pristine::Root,
+  traits::{MutTxnT, TxnT},
+  types::{HashMap, SmallStr, SmallString, UId},
 };
 
 use super::{hash::*, sanakirja::types::*, ChangeId};
@@ -29,15 +31,15 @@ impl<T> Clone for ArcTxn<T> {
   }
 }
 
-// impl<T: MutTxnT> ArcTxn<T> {
-//   pub fn commit(self) -> Result<(), T::GraphError> {
-//     if let Ok(txn) = Arc::try_unwrap(self.0) {
-//       txn.into_inner().commit()
-//     } else {
-//       panic!("Tried to commit an ArcTxn without dropping its references")
-//     }
-//   }
-// }
+impl<T: MutTxnT> ArcTxn<T> {
+  pub fn commit(self) -> Result<(), T::GraphError> {
+    if let Ok(txn) = Arc::try_unwrap(self.0) {
+      txn.into_inner().commit()
+    } else {
+      panic!("Tried to commit an ArcTxn without dropping its references")
+    }
+  }
+}
 
 impl<T> std::ops::Deref for ArcTxn<T> {
   type Target = RwLock<T>;
@@ -63,9 +65,86 @@ where
   pub external: UDb<ChangeId, SerializedHash>,
 
   pub(crate) open_spaces: Mutex<HashMap<SmallString, space::SpaceRef<Self>>>,
-
-  pub(super) spaces: UDb<SmallString, space::SerializedSpace>,
+  pub(super) spaces: UDb<SmallStr, space::SerializedSpace>,
 
   pub(super) counter: usize,
   pub(super) cur_space: Option<String>,
+}
+
+/// This is actually safe because the only non-Send fields are
+/// `open_spaces`, but we can't do anything with
+/// a `SpaceRef` whose transaction has been moved to another thread.
+unsafe impl<T: LoadPage<Error = sanakirja::Error> + RootPage> Send for GenericTxn<T> {}
+
+impl<T: LoadPage<Error = sanakirja::Error> + RootPage> TxnT for GenericTxn<T> {}
+
+impl MutTxnT for MutTxn<()> {
+  fn open_or_create_space(&mut self, name: &str) -> Result<space::SpaceRef<Self>, Self::GraphError> {
+    let name = SmallString::from_str(name);
+    let mut commit = None;
+
+    let result = match self.open_spaces.lock().entry(name.clone()) {
+      Entry::Vacant(v) => {
+        let r = match btree::get(&self.txn, &self.spaces, &name, None)? {
+          Some((name_, b)) if name_ == name.as_ref() => space::SpaceRef::new(space::Space {
+            id: b.id,
+            name: name.clone(),
+            last_modified: b.last_modified,
+            changes: Db::from_page(b.changes.into()),
+            vaults: Db::from_page(b.vaults.into()),
+          }),
+          _ => {
+            let br = space::SpaceRef::new(space::Space {
+              id: UId::new(),
+              name: name.clone(),
+              last_modified: 0,
+              changes: btree::create_db_(&mut self.txn)?,
+              vaults: btree::create_db_(&mut self.txn)?,
+            });
+            commit = Some(br.clone());
+            br
+          }
+        };
+      }
+      Entry::Occupied(occ) => todo!(),
+    };
+
+    if let Some(commit) = commit {
+      todo!("self.put_space(&commit)?");
+    }
+
+    Ok(result)
+  }
+
+  fn commit(mut self) -> Result<(), Self::GraphError> {
+    use std::ops::DerefMut;
+
+    {
+      let open_spaces = std::mem::replace(self.open_spaces.lock().deref_mut(), HashMap::default());
+      for (name, space) in open_spaces {
+        debug!("commit_space {:?}", name);
+        todo!("self.commit_space(&space)?");
+      }
+    }
+
+    if let Some(ref cur) = self.cur_space {
+      unsafe {
+        assert!(cur.len() < 256);
+        let b = self.txn.root_page_mut();
+        b[4096 - 256] = cur.len() as u8;
+        std::ptr::copy(cur.as_ptr(), b.as_mut_ptr().add(4096 - 255), cur.len())
+      }
+    }
+
+    debug!(
+      "{:x} {:x} {:x}",
+      self.internal.db, self.external.db, self.spaces.db
+    );
+
+    self.txn.set_root(Root::Internal as usize, self.internal.db);
+    self.txn.set_root(Root::External as usize, self.external.db);
+    self.txn.set_root(Root::Spaces as usize, self.spaces.db);
+
+    todo!("commit")
+  }
 }

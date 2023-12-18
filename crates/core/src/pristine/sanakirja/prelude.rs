@@ -6,15 +6,18 @@ use sanakirja::{direct_repr, Storable, UnsizedStorable};
 use crate::{
   models::space::SerializedSpace,
   pristine::{ChangeId, SerializedHash},
-  types::{SmallString, UId},
+  types::{SmallString, UId, L64},
 };
 
 // register sanakirja storage
 direct_repr!(UId);
 impl sanakirja::debug::Check for UId {}
 
-direct_repr!(SmallString);
-impl sanakirja::debug::Check for SmallString {}
+direct_repr!(L64);
+impl sanakirja::debug::Check for L64 {}
+
+// direct_repr!(SmallString);
+// impl sanakirja::debug::Check for SmallString {}
 
 direct_repr!(SerializedHash);
 impl sanakirja::debug::Check for SerializedHash {}

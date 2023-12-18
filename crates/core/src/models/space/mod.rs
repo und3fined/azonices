@@ -7,12 +7,12 @@ pub use prelude::SpaceTxnT;
 
 use std::sync::Arc;
 
-use parking_lot::RwLock;
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use sanakirja::{LoadPage, RootPage};
 
 use crate::{
-  pristine::GenericTxn,
-  types::{SmallString, UId},
+  pristine::{types::Db, ChangeId, GenericTxn},
+  types::{SmallString, UId, L64},
 };
 
 pub struct SpaceRef<T: SpaceTxnT> {
@@ -27,9 +27,28 @@ impl<T: SpaceTxnT> SpaceRef<T> {
   }
 }
 
+impl<T: SpaceTxnT> SpaceRef<T> {
+  pub fn read(&self) -> RwLockReadGuard<T::Space> {
+    self.r.read()
+  }
+  pub fn write(&self) -> RwLockWriteGuard<T::Space> {
+    self.r.write()
+  }
+}
+
+impl<T: SpaceTxnT> Clone for SpaceRef<T> {
+  fn clone(&self) -> Self {
+    SpaceRef { r: self.r.clone() }
+  }
+}
+
 pub struct Space {
   pub id: UId,
   pub name: SmallString,
+  pub last_modified: u64,
+
+  pub changes: Db<ChangeId, L64>,
+  pub vaults: Db<UId, L64>,
 }
 
 impl<T: LoadPage<Error = sanakirja::Error> + RootPage> SpaceTxnT for GenericTxn<T> {
@@ -42,9 +61,14 @@ impl<T: LoadPage<Error = sanakirja::Error> + RootPage> SpaceTxnT for GenericTxn<
   fn name<'a>(&self, space: &'a Self::Space) -> &'a str {
     space.name.as_str()
   }
+
+  type Changeset = Db<ChangeId, L64>;
 }
 
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
 pub struct SerializedSpace {
-  id: UId,
+  pub id: UId,
+  pub changes: L64,
+  pub vaults: L64,
+  pub last_modified: u64,
 }
