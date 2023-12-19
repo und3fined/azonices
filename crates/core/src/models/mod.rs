@@ -7,5 +7,5 @@ pub use base::*;
 pub mod graph;
 pub mod space;
 
-mod transaction;
-pub use transaction::*;
+// core model
+pub mod entry;

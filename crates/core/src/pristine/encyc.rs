@@ -62,9 +62,8 @@ impl Encyc {
 #[repr(usize)]
 pub enum Root {
   Version,
-  Internal,
-  External,
   Spaces,
+  Entries,
 }
 
 const VERSION: L64 = L64(1u64.to_le());
@@ -78,10 +77,8 @@ impl Encyc {
 
     fn begin(txn: sanakirja::Txn<Arc<Env>>) -> Option<Txn> {
       Some(Txn {
+        entries: txn.root_db(Root::Entries as usize)?,
         spaces: txn.root_db(Root::Spaces as usize)?,
-        external: txn.root_db(Root::External as usize)?,
-        internal: txn.root_db(Root::Internal as usize)?,
-
         open_spaces: Mutex::new(HashMap::default()),
         txn,
         counter: 0,
@@ -111,17 +108,12 @@ impl Encyc {
     }
 
     Ok(MutTxn {
+      entries: if let Some(db) = txn.root_db(Root::Entries as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
       spaces: if let Some(db) = txn.root_db(Root::Spaces as usize) {
-        db
-      } else {
-        btree::create_db_(&mut txn)?
-      },
-      external: if let Some(db) = txn.root_db(Root::External as usize) {
-        db
-      } else {
-        btree::create_db_(&mut txn)?
-      },
-      internal: if let Some(db) = txn.root_db(Root::Internal as usize) {
         db
       } else {
         btree::create_db_(&mut txn)?

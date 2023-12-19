@@ -4,9 +4,8 @@
 use sanakirja::{direct_repr, Storable, UnsizedStorable};
 
 use crate::{
-  models::space::SerializedSpace,
-  pristine::{ChangeId, SerializedHash},
-  types::{SmallString, UId, L64},
+  models::{entry::SerializedEntry, space::SerializedSpace},
+  types::{ChangeId, SerializedHash, UId, L64},
 };
 
 // register sanakirja storage
@@ -16,9 +15,6 @@ impl sanakirja::debug::Check for UId {}
 direct_repr!(L64);
 impl sanakirja::debug::Check for L64 {}
 
-// direct_repr!(SmallString);
-// impl sanakirja::debug::Check for SmallString {}
-
 direct_repr!(SerializedHash);
 impl sanakirja::debug::Check for SerializedHash {}
 
@@ -27,3 +23,7 @@ impl sanakirja::debug::Check for ChangeId {}
 
 direct_repr!(SerializedSpace);
 impl sanakirja::debug::Check for SerializedSpace {}
+
+// register model storage
+direct_repr!(SerializedEntry);
+impl sanakirja::debug::Check for SerializedEntry {}

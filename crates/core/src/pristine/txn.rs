@@ -9,13 +9,13 @@ use parking_lot::{Mutex, RwLock};
 use sanakirja::{btree, Env, LoadPage, RootPage};
 
 use crate::{
-  models::space,
+  models::{entry::SerializedEntry, space},
   pristine::Root,
   traits::{MutTxnT, TxnT},
-  types::{HashMap, SmallStr, SmallString, UId},
+  types::*,
 };
 
-use super::{hash::*, sanakirja::types::*, ChangeId};
+use super::sanakirja::types::*;
 
 pub struct ArcTxn<T>(pub Arc<RwLock<T>>);
 
@@ -58,15 +58,10 @@ where
   #[doc(hidden)]
   pub txn: T,
 
-  // transaction saved here
-  #[doc(hidden)]
-  pub internal: UDb<SerializedHash, ChangeId>,
-  #[doc(hidden)]
-  pub external: UDb<ChangeId, SerializedHash>,
+  pub entries: UDb<ChangeId, SerializedEntry>,
 
   pub(crate) open_spaces: Mutex<HashMap<SmallString, space::SpaceRef<Self>>>,
   pub(super) spaces: UDb<SmallStr, space::SerializedSpace>,
-
   pub(super) counter: usize,
   pub(super) cur_space: Option<String>,
 }
@@ -136,13 +131,9 @@ impl MutTxnT for MutTxn<()> {
       }
     }
 
-    debug!(
-      "{:x} {:x} {:x}",
-      self.internal.db, self.external.db, self.spaces.db
-    );
+    debug!("{:x} {:x}", self.entries.db, self.spaces.db);
 
-    self.txn.set_root(Root::Internal as usize, self.internal.db);
-    self.txn.set_root(Root::External as usize, self.external.db);
+    self.txn.set_root(Root::Entries as usize, self.entries.db);
     self.txn.set_root(Root::Spaces as usize, self.spaces.db);
 
     todo!("commit")

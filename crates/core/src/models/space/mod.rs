@@ -11,8 +11,8 @@ use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use sanakirja::{LoadPage, RootPage};
 
 use crate::{
-  pristine::{types::Db, ChangeId, GenericTxn},
-  types::{SmallString, UId, L64},
+  pristine::{types::Db, GenericTxn},
+  types::{ChangeId, SmallString, UId, L64},
 };
 
 pub struct SpaceRef<T: SpaceTxnT> {

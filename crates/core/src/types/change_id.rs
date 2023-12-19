@@ -6,9 +6,7 @@ use std::fmt;
 use byteorder::{ByteOrder, LittleEndian};
 use serde::{Deserialize, Serialize};
 
-use crate::types::L64;
-
-use super::{Base32, BASE32};
+use super::{Base32, BASE32, L64};
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash, Serialize, Deserialize)]
 #[doc(hidden)]
