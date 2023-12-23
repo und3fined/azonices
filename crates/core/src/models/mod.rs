@@ -8,4 +8,7 @@ pub mod graph;
 pub mod space;
 
 // core model
+pub mod compartment;
 pub mod entry;
+pub mod filter;
+pub mod label;

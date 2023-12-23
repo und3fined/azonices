@@ -47,7 +47,7 @@ pub struct Space {
   pub name: SmallString,
   pub last_modified: u64,
 
-  pub changes: Db<ChangeId, L64>,
+  pub entries: Db<ChangeId, L64>,
   pub vaults: Db<UId, L64>,
 }
 
@@ -68,7 +68,9 @@ impl<T: LoadPage<Error = sanakirja::Error> + RootPage> SpaceTxnT for GenericTxn<
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
 pub struct SerializedSpace {
   pub id: UId,
-  pub changes: L64,
   pub vaults: L64,
   pub last_modified: u64,
+
+  pub entries: L64, // transactions
+  pub labels: L64,  // like tags
 }

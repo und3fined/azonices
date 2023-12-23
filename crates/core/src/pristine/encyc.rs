@@ -8,7 +8,10 @@ use std::{io::ErrorKind, path::Path, sync::Arc};
 
 use sanakirja::{btree, Env, RootDb};
 
-use crate::types::{HashMap, L64};
+use crate::{
+  pristine::{Root, VERSION},
+  types::{HashMap, L64},
+};
 
 use super::{ArcTxn, EncycError, MutTxn, Txn};
 
@@ -58,16 +61,6 @@ impl Encyc {
   }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-#[repr(usize)]
-pub enum Root {
-  Version,
-  Spaces,
-  Entries,
-}
-
-const VERSION: L64 = L64(1u64.to_le());
-
 impl Encyc {
   pub fn txn_begin(&self) -> Result<Txn, EncycError> {
     let txn = Env::txn_begin(self.env.clone())?;
@@ -78,6 +71,7 @@ impl Encyc {
     fn begin(txn: sanakirja::Txn<Arc<Env>>) -> Option<Txn> {
       Some(Txn {
         entries: txn.root_db(Root::Entries as usize)?,
+        compartments: txn.root_db(Root::Compartments as usize)?,
         spaces: txn.root_db(Root::Spaces as usize)?,
         open_spaces: Mutex::new(HashMap::default()),
         txn,
@@ -109,6 +103,11 @@ impl Encyc {
 
     Ok(MutTxn {
       entries: if let Some(db) = txn.root_db(Root::Entries as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
+      compartments: if let Some(db) = txn.root_db(Root::Compartments as usize) {
         db
       } else {
         btree::create_db_(&mut txn)?

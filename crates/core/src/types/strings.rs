@@ -4,14 +4,17 @@
 pub const MAX_LEN: usize = 255;
 
 /// A string of length at most 255 bytes, with a more compact on-disk encoding.
+#[repr(C)]
 pub struct SmallString {
   pub len: u8,
   pub str: [u8; MAX_LEN],
 }
 
+/// A borrowed version of `SmallStr`.
+#[repr(C)]
 pub struct SmallStr {
   pub len: u8,
-  _str: [u8],
+  pub _str: [u8],
 }
 
 impl Default for SmallString {
