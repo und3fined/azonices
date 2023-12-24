@@ -1,5 +1,6 @@
 // Copyright (c) 2023 und3fy.dev. All rights reserved.
 // Created by und3fined <me@und3fy.dev> on 2023 Dec 24.
+#![allow(dead_code)]
 
 use crate::types::{SmallString, UId, L64};
 

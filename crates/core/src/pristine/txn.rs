@@ -59,6 +59,8 @@ pub enum Root {
   Version,
   Entries,
   Compartments,
+  Labels,
+  Filters,
   Spaces,
 }
 

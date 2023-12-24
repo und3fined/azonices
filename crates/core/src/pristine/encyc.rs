@@ -72,6 +72,8 @@ impl Encyc {
       Some(Txn {
         entries: txn.root_db(Root::Entries as usize)?,
         compartments: txn.root_db(Root::Compartments as usize)?,
+        labels: txn.root_db(Root::Labels as usize)?,
+        filters: txn.root_db(Root::Filters as usize)?,
         spaces: txn.root_db(Root::Spaces as usize)?,
         open_spaces: Mutex::new(HashMap::default()),
         txn,
@@ -108,6 +110,16 @@ impl Encyc {
         btree::create_db_(&mut txn)?
       },
       compartments: if let Some(db) = txn.root_db(Root::Compartments as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
+      labels: if let Some(db) = txn.root_db(Root::Labels as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
+      filters: if let Some(db) = txn.root_db(Root::Filters as usize) {
         db
       } else {
         btree::create_db_(&mut txn)?
