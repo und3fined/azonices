@@ -4,23 +4,16 @@
 
 use std::sync::Arc;
 
-// use log::debug;
 use parking_lot::{Mutex, RwLock};
-use sanakirja::{
-  // btree,
-  Env,
-  LoadPage,
-  RootPage,
-};
+use sanakirja::{btree, Env, LoadPage, RootDb, RootPage};
 
 use crate::{
   models::{compartment::SerializedCompartment, entry::SerializedEntry, filter::SerializedFilter, label::SerializedLabel, space},
-  // pristine::Root,
   traits::{MutTxnT, TxnT},
   types::*,
 };
 
-use super::sanakirja::types::*;
+use super::{sanakirja::types::*, Encyc, EncycError};
 
 pub struct ArcTxn<T>(pub Arc<RwLock<T>>);
 
@@ -65,6 +58,81 @@ pub enum Root {
 }
 
 pub const VERSION: L64 = L64(1u64.to_le());
+
+impl Encyc {
+  pub fn txn_begin(&self) -> Result<Txn, EncycError> {
+    let txn = Env::txn_begin(self.env.clone())?;
+    if L64(txn.root(Root::Version as usize)) != VERSION {
+      return Err(EncycError::Version);
+    }
+
+    fn begin(txn: sanakirja::Txn<Arc<Env>>) -> Option<Txn> {
+      Some(Txn {
+        entries: txn.root_db(Root::Entries as usize)?,
+        compartments: txn.root_db(Root::Compartments as usize)?,
+        labels: txn.root_db(Root::Labels as usize)?,
+        filters: txn.root_db(Root::Filters as usize)?,
+        spaces: txn.root_db(Root::Spaces as usize)?,
+        open_spaces: Mutex::new(HashMap::default()),
+        txn,
+        counter: 0,
+        cur_space: None,
+      })
+    }
+
+    if let Some(txn) = begin(txn) {
+      Ok(txn)
+    } else {
+      Err(EncycError::PristineCorrupted)
+    }
+  }
+
+  pub fn arc_txn_begin(&self) -> Result<ArcTxn<MutTxn<()>>, EncycError> {
+    Ok(ArcTxn(Arc::new(RwLock::new(self.mut_txn_begin()?))))
+  }
+
+  pub fn mut_txn_begin(&self) -> Result<MutTxn<()>, EncycError> {
+    let mut txn = Env::mut_txn_begin(self.env.clone())?;
+    if let Some(version) = txn.root(Root::Version as usize) {
+      if L64(version) != VERSION {
+        return Err(EncycError::Version.into());
+      }
+    } else {
+      txn.set_root(Root::Version as usize, VERSION.0);
+    }
+
+    Ok(MutTxn {
+      entries: if let Some(db) = txn.root_db(Root::Entries as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
+      compartments: if let Some(db) = txn.root_db(Root::Compartments as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
+      labels: if let Some(db) = txn.root_db(Root::Labels as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
+      filters: if let Some(db) = txn.root_db(Root::Filters as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
+      spaces: if let Some(db) = txn.root_db(Root::Spaces as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
+      open_spaces: Mutex::new(HashMap::default()),
+      txn,
+      cur_space: None,
+    })
+  }
+}
 
 pub type Txn = GenericTxn<sanakirja::Txn<Arc<Env>>>;
 pub type MutTxn<T> = GenericTxn<sanakirja::MutTxn<Arc<Env>, T>>;
