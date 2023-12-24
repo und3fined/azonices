@@ -8,7 +8,7 @@ use parking_lot::{Mutex, RwLock};
 use sanakirja::{btree, Env, LoadPage, RootDb, RootPage};
 
 use crate::{
-  models::{compartment::SerializedCompartment, entry::SerializedEntry, filter::SerializedFilter, label::SerializedLabel, space},
+  models::{compartment::SerializedCompartment, entry::SerializedEntry, filter::SerializedFilter, label::SerializedLabel, space, vault::SerializedVault},
   traits::{MutTxnT, TxnT},
   types::*,
 };
@@ -54,6 +54,7 @@ pub enum Root {
   Compartments,
   Labels,
   Filters,
+  Vaults,
   Spaces,
 }
 
@@ -72,10 +73,10 @@ impl Encyc {
         compartments: txn.root_db(Root::Compartments as usize)?,
         labels: txn.root_db(Root::Labels as usize)?,
         filters: txn.root_db(Root::Filters as usize)?,
+        vaults: txn.root_db(Root::Vaults as usize)?,
         spaces: txn.root_db(Root::Spaces as usize)?,
         open_spaces: Mutex::new(HashMap::default()),
         txn,
-        counter: 0,
         cur_space: None,
       })
     }
@@ -122,6 +123,11 @@ impl Encyc {
       } else {
         btree::create_db_(&mut txn)?
       },
+      vaults: if let Some(db) = txn.root_db(Root::Vaults as usize) {
+        db
+      } else {
+        btree::create_db_(&mut txn)?
+      },
       spaces: if let Some(db) = txn.root_db(Root::Spaces as usize) {
         db
       } else {
@@ -149,9 +155,12 @@ where
   pub labels: UDb<UId, SerializedLabel>,             // like tags, but can be applied to any entry
   pub filters: UDb<UId, SerializedFilter>,           // like campaigns, budgets etc. (can be applied to any entry)
 
+  pub vaults: UDb<UId, SerializedVault>,
+  // open_vaults: Mutex<HashMap<UId, VaultRef<Self>>>,
+
+  //
   pub(crate) open_spaces: Mutex<HashMap<SmallString, space::SpaceRef<Self>>>,
   pub(super) spaces: UDb<SmallStr, space::SerializedSpace>,
-  pub(super) counter: usize,
   pub(super) cur_space: Option<String>,
 }
 

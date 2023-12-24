@@ -12,3 +12,4 @@ pub mod compartment;
 pub mod entry;
 pub mod filter;
 pub mod label;
+pub mod vault;

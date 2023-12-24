@@ -4,7 +4,10 @@
 use sanakirja::{direct_repr, Storable, UnsizedStorable};
 
 use crate::{
-  models::{compartment::SerializedCompartment, entry::SerializedEntry, filter::SerializedFilter, label::SerializedLabel, space::SerializedSpace},
+  models::{
+    compartment::SerializedCompartment, entry::SerializedEntry, filter::SerializedFilter, label::SerializedLabel, space::SerializedSpace,
+    vault::SerializedVault,
+  },
   types::{ChangeId, SerializedHash, UId, L64},
 };
 
@@ -37,3 +40,6 @@ impl sanakirja::debug::Check for SerializedFilter {}
 
 direct_repr!(SerializedLabel);
 impl sanakirja::debug::Check for SerializedLabel {}
+
+direct_repr!(SerializedVault);
+impl sanakirja::debug::Check for SerializedVault {}
